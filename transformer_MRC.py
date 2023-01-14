@@ -286,64 +286,64 @@ def main():
     train_data, val_data = train_test_split(tokenized_datasets["train"], test_size=0.3, random_state=2021)
 
     # convert the text data into tensors
-    # train_input_ids = torch.tensor(train_data["input_ids"], dtype=torch.long).to(device)
-    # train_start_positions = torch.tensor(train_data["start_positions"], dtype=torch.long).to(device)
-    # train_end_positions = torch.tensor(train_data["end_positions"], dtype=torch.long).to(device)
-    #
-    # val_input_ids = torch.tensor(val_data["input_ids"], dtype=torch.long).to(device)
-    # val_start_positions = torch.tensor(val_data["start_positions"], dtype=torch.long).to(device)
-    # val_end_positions = torch.tensor(val_data["end_positions"], dtype=torch.long).to(device)
-    #
-    # test_input_ids = torch.tensor(test_data["input_ids"], dtype=torch.long).to(device)
-    # test_start_positions = torch.tensor(test_data["start_positions"], dtype=torch.long).to(device)
-    # test_end_positions = torch.tensor(test_data["end_positions"], dtype=torch.long).to(device)
-    #
-    #
-    # # hyper-parameters for training and evaluation
-    # batch_size = 100      # batch size for training
-    # lr = 0.1              # learning rate
-    # nepoch = 1            # number of iterations
-    # ntokens = len(vocab)  # size of vocabulary
-    # emsize = 512          # embedding dimension
-    # d_hid = 64            # dimension of the feedforward network model in nn.TransformerEncoder
-    # nlayers = 6           # number of nn.TransformerEncoderLayer in nn.TransformerEncoder
-    # nhead = 8             # number of heads in nn.MultiheadAttention
-    # dropout = 0.1         # dropout probability
-    #
-    # # prepare data loader, model, and other things for training
-    # model = TransformerModel(ntokens, emsize, nhead, d_hid, nlayers, dropout).to(device)
-    # criterion = nn.CrossEntropyLoss()
-    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
-    #
-    # # training loop
-    # best_val_acc = float(0)
-    # best_model = None
-    # print('| Start training for', nepoch, 'epochs')
-    # print('-' * 89)
-    # for epoch in range(1, nepoch + 1):
-    #     epoch_start_time = time.time()
-    #
-    #     train(model, batch_size, device, train_input_ids, criterion, optimizer, scheduler, epoch, train_start_positions, train_end_positions)
-    #     val_loss, val_acc = evaluate(model, val_input_ids, batch_size, device, criterion, val_start_positions, val_end_positions)
-    #
-    #     elapsed = time.time() - epoch_start_time
-    #     print('-' * 89)
-    #     print(f'| End of epoch {epoch:3d} | time: {elapsed:5.2f}s | ' f'valid loss {val_loss:5.2f} | ' f'valid accuracy {val_acc:5.2f} |')
-    #     print('-' * 89)
-    #
-    #     if val_acc > best_val_acc:
-    #         best_val_acc = val_acc
-    #         best_model = copy.deepcopy(model)
-    #
-    #     scheduler.step()
-    #
-    # # evaluate the best model with lowest PPL on the validation set
-    # test_loss, test_acc = evaluate(best_model, test_input_ids, batch_size, device, criterion, test_start_positions, test_end_positions, tokenizer=tokenizer, test=True)
-    #
-    # print('=' * 89)
-    # print(f'| End of training | test loss {test_loss:5.2f} | test accuracy {test_acc:5.2f} |')
-    # print('=' * 89)
+    train_input_ids = torch.tensor(train_data["input_ids"], dtype=torch.long).to(device)
+    train_start_positions = torch.tensor(train_data["start_positions"], dtype=torch.long).to(device)
+    train_end_positions = torch.tensor(train_data["end_positions"], dtype=torch.long).to(device)
+
+    val_input_ids = torch.tensor(val_data["input_ids"], dtype=torch.long).to(device)
+    val_start_positions = torch.tensor(val_data["start_positions"], dtype=torch.long).to(device)
+    val_end_positions = torch.tensor(val_data["end_positions"], dtype=torch.long).to(device)
+
+    test_input_ids = torch.tensor(test_data["input_ids"], dtype=torch.long).to(device)
+    test_start_positions = torch.tensor(test_data["start_positions"], dtype=torch.long).to(device)
+    test_end_positions = torch.tensor(test_data["end_positions"], dtype=torch.long).to(device)
+
+
+    # hyper-parameters for training and evaluation
+    batch_size = 100      # batch size for training
+    lr = 0.1              # learning rate
+    nepoch = 1            # number of iterations
+    ntokens = len(vocab)  # size of vocabulary
+    emsize = 512          # embedding dimension
+    d_hid = 64            # dimension of the feedforward network model in nn.TransformerEncoder
+    nlayers = 6           # number of nn.TransformerEncoderLayer in nn.TransformerEncoder
+    nhead = 8             # number of heads in nn.MultiheadAttention
+    dropout = 0.1         # dropout probability
+
+    # prepare data loader, model, and other things for training
+    model = TransformerModel(ntokens, emsize, nhead, d_hid, nlayers, dropout).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+
+    # training loop
+    best_val_acc = float(0)
+    best_model = None
+    print('| Start training for', nepoch, 'epochs')
+    print('-' * 89)
+    for epoch in range(1, nepoch + 1):
+        epoch_start_time = time.time()
+
+        train(model, batch_size, device, train_input_ids, criterion, optimizer, scheduler, epoch, train_start_positions, train_end_positions)
+        val_loss, val_acc = evaluate(model, val_input_ids, batch_size, device, criterion, val_start_positions, val_end_positions)
+
+        elapsed = time.time() - epoch_start_time
+        print('-' * 89)
+        print(f'| End of epoch {epoch:3d} | time: {elapsed:5.2f}s | ' f'valid loss {val_loss:5.2f} | ' f'valid accuracy {val_acc:5.2f} |')
+        print('-' * 89)
+
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_model = copy.deepcopy(model)
+
+        scheduler.step()
+
+    # evaluate the best model with lowest PPL on the validation set
+    test_loss, test_acc = evaluate(best_model, test_input_ids, batch_size, device, criterion, test_start_positions, test_end_positions, tokenizer=tokenizer, test=True)
+
+    print('=' * 89)
+    print(f'| End of training | test loss {test_loss:5.2f} | test accuracy {test_acc:5.2f} |')
+    print('=' * 89)
 
 
 if __name__ == '__main__':
