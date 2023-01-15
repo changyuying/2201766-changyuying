@@ -31,9 +31,9 @@ def train(model: nn.Module, batch_size, device, input_ids, criterion, optimizer,
     num_batches = len(input_ids) // batch_size
     for batch, i in enumerate(range(0, input_ids.size(0) - 1, batch_size)):
         seq_len = min(batch_size, len(input_ids) - 1 - i)
-        train_input_ids = input_ids[i:i + seq_len, :].transpose(0, 1).to(device)
-        train_start_positions = start_positions[i:i + seq_len].to(device)
-        train_end_positions = end_positions[i:i + seq_len].to(device)
+        train_input_ids = input_ids[i:i + seq_len, :].transpose(0, 1)
+        train_start_positions = start_positions[i:i + seq_len]
+        train_end_positions = end_positions[i:i + seq_len]
 
         start_logits, end_logits = model(train_input_ids, src_mask)
         start_loss = criterion(start_logits, train_start_positions)
@@ -50,7 +50,7 @@ def train(model: nn.Module, batch_size, device, input_ids, criterion, optimizer,
         optimizer.step()
 
         total_loss += loss.item()
-        total_acc += acc
+        total_acc += acc.item()
         if batch % log_interval == 0 and batch > 0:
             lr = scheduler.get_last_lr()[0]
             ms_per_batch = (time.time() - start_time) * 1000 / log_interval
@@ -60,6 +60,7 @@ def train(model: nn.Module, batch_size, device, input_ids, criterion, optimizer,
                   f'lr {lr:02.2f} | ms/batch {ms_per_batch:5.2f} | '
                   f'loss {cur_loss:5.2f} | accuracy {cur_acc:5.2f} | ')
             total_loss = 0
+            total_acc = 0
             start_time = time.time()
 
 def evaluate(model: nn.Module, input_ids: Tensor, batch_size: int, device, criterion, start_positions, end_positions, tokenizer=None, test=False):
@@ -85,19 +86,22 @@ def evaluate(model: nn.Module, input_ids: Tensor, batch_size: int, device, crite
             acc = (acc_start + acc_end) / 2
 
             total_loss += seq_len * loss.item()
-            total_acc += seq_len * acc
+            total_acc += seq_len * acc.item()
 
             if test == True:
-                pre_start_position = torch.tensor([start_logit.argmax() for start_logit in start_logits])
-                pre_end_position = torch.tensor([end_logit.argmax() for end_logit in end_logits])
+                pre_start_position = start_logits.argmax(1)
+                pre_end_position = end_logits.argmax(1)
                 for m in range(len(pre_start_position)):
-                    for input in range(len(validation_input_ids[m])):
-                        if validation_input_ids[m][input] == '[PAD]':
+                    for inputs in range(len(validation_input_ids[m])):
+                        if validation_input_ids[m][inputs] == 0:
                             break
-                    validation_input_ids[m] = validation_input_ids[m][:input]
-                    quest_ans = tokenizer.decode(validation_input_ids[m])
-                    true_answer = tokenizer.decode(validation_input_ids[m][val_start_positions[m]: val_end_positions[m] + 1])
-                    pre_answer = tokenizer.decode(validation_input_ids[m][pre_start_position[m]: pre_end_position[m] + 1])
+                    show_input_ids = validation_input_ids[m][:inputs]
+                    quest_ans = tokenizer.decode(show_input_ids)
+                    true_answer = tokenizer.decode(show_input_ids[val_start_positions[m]: val_end_positions[m] + 1 if val_end_positions[m] + 1 <= inputs else inputs])
+                    if pre_start_position[m] <= pre_end_position[m]:
+                        pre_answer = tokenizer.decode(show_input_ids[pre_start_position[m]: pre_end_position[m] + 1 if pre_end_position[m] + 1 <= inputs else inputs])
+                    else:
+                        pre_answer = tokenizer.decode(show_input_ids[0:1])
                     print("Question + context: " + quest_ans)
                     print("True answer: " + true_answer)
                     print("Prediction answer: " + pre_answer)
@@ -300,9 +304,9 @@ def main():
 
 
     # hyper-parameters for training and evaluation
-    batch_size = 100      # batch size for training
+    batch_size = 10       # batch size for training
     lr = 0.1              # learning rate
-    nepoch = 1            # number of iterations
+    nepoch = 50           # number of iterations
     ntokens = len(vocab)  # size of vocabulary
     emsize = 512          # embedding dimension
     d_hid = 64            # dimension of the feedforward network model in nn.TransformerEncoder
